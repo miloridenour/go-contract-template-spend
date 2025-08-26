@@ -20,7 +20,7 @@ func isInit() bool {
 // Abort execution if token has not been initialized.
 func assertInit() {
 	if !isInit() {
-		// env.Abort()
+		sdk.Abort("Token not initialized")
 	}
 }
 
@@ -37,7 +37,7 @@ func safeAdd(a, b uint64) uint64 {
 	// Overflow occurs if sum < a (or equivalently sum < b)
 	overflow := sum < a
 	if overflow {
-		// env.Abort()
+		sdk.Abort("safeAdd overflow")
 	}
 	return sum
 }
@@ -48,7 +48,7 @@ func safeSub(a, b uint64) uint64 {
 	// Overflow occurs if sum > a (or equivalently sum < b)
 	overflow := sum > a
 	if overflow {
-		// env.Abort()
+		sdk.Abort("safeSub overflow")
 	}
 	return sum
 }
@@ -67,7 +67,7 @@ func decBalance(account sdk.Address, amount uint64) {
 		newBal := safeSub(oldBal, amount)
 		sdk.StateSetObject("accs/"+account.String()+"/bal", strconv.FormatUint(newBal, 10))
 	} else {
-		// env.Abort("Insufficient balance")
+		sdk.Abort("Insufficient balance")
 	}
 }
 
@@ -87,11 +87,11 @@ func getBalance(account sdk.Address) uint64 {
 //go:wasmexport init
 func Init(a *string) *string {
 	if isInit() {
-		// env.Abort()
+		sdk.Abort("Already initialized")
 	}
 	env := sdk.GetEnv()
 	if env.Caller.Address.String() != Creator {
-		// env.Abort()
+		sdk.Abort("Caller must be creator to initialize")
 	}
 	sdk.StateSetObject("isInit", "1")
 	sdk.StateSetObject("supply", "0")
@@ -105,11 +105,11 @@ func Init(a *string) *string {
 func Mint(a *string) *string {
 	owner, isOwner := getOwner()
 	if !isInit() || !isOwner {
-		// env.Abort("Must be owner")
+		sdk.Abort("Must be owner")
 	}
 	toMint, err := strconv.ParseUint(*a, 10, 64)
 	if err != nil {
-		// env.abort("Invalid amount")
+		sdk.Abort("Invalid amount")
 	}
 	supplyStr := sdk.StateGetObject("supply")
 	supply, _ := strconv.ParseUint(*supplyStr, 10, 64)
@@ -118,7 +118,7 @@ func Mint(a *string) *string {
 		sdk.StateSetObject("supply", strconv.FormatUint(newSupply, 10))
 		incBalance(owner, toMint)
 	} else {
-		// env.Abort()
+		sdk.Abort("Exceeded max supply")
 	}
 	return nil
 }
@@ -130,7 +130,7 @@ func Burn(a *string) *string {
 	assertInit()
 	toBurn, err := strconv.ParseUint(*a, 10, 64)
 	if err != nil {
-		// env.Abort("Invalid amount")
+		sdk.Abort("Invalid amount")
 	}
 	env := sdk.GetEnv()
 	decBalance(env.Caller.Address, toBurn)
@@ -148,14 +148,14 @@ func Transfer(a *string) *string {
 	assertInit()
 	params := strings.Split(*a, ",")
 	if len(params) < 2 {
-		// env.Abort("Invalid number of parameters")
+		sdk.Abort("Invalid number of parameters")
 	}
 	env := sdk.GetEnv()
 	from := env.Caller.Address.String()
 	to := params[0]
 	amt, err := strconv.ParseUint(params[1], 10, 64)
 	if err != nil {
-		// env.Abort("Invalid amount")
+		sdk.Abort("Invalid amount")
 	}
 	decBalance(sdk.Address(from), amt)
 	incBalance(sdk.Address(to), amt)
@@ -171,7 +171,7 @@ func ChangeOwner(a *string) *string {
 	if isOwner {
 		sdk.StateSetObject("owner", *a)
 	} else {
-		// env.Abort()
+		sdk.Abort("Not owner")
 	}
 	return nil
 }
