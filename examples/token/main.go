@@ -28,7 +28,7 @@ func assertInit() {
 func getOwner() (sdk.Address, bool) {
 	i := sdk.StateGetObject("owner")
 	e := sdk.GetEnv()
-	return sdk.Address(*i), *i == e.Caller.Address.String()
+	return sdk.Address(*i), *i == e.Caller.String()
 }
 
 // Perform a + b addition. Aborts execution if an overflow is detected.
@@ -90,7 +90,7 @@ func Init(a *string) *string {
 		sdk.Abort("Already initialized")
 	}
 	env := sdk.GetEnv()
-	if env.Caller.Address.String() != Creator {
+	if env.Caller.String() != Creator {
 		sdk.Abort("Caller must be creator to initialize")
 	}
 	sdk.StateSetObject("isInit", "1")
@@ -133,7 +133,7 @@ func Burn(a *string) *string {
 		sdk.Abort("Invalid amount")
 	}
 	env := sdk.GetEnv()
-	decBalance(env.Caller.Address, toBurn)
+	decBalance(env.Caller, toBurn)
 	supplyStr := sdk.StateGetObject("supply")
 	supply, _ := strconv.ParseUint(*supplyStr, 10, 64)
 	newSupply := safeSub(supply, toBurn)
@@ -151,7 +151,7 @@ func Transfer(a *string) *string {
 		sdk.Abort("Invalid number of parameters")
 	}
 	env := sdk.GetEnv()
-	from := env.Caller.Address.String()
+	from := env.Caller.String()
 	to := params[0]
 	amt, err := strconv.ParseUint(params[1], 10, 64)
 	if err != nil {
