@@ -62,10 +62,19 @@ func contractCall(contractId *string, method *string, payload *string, options *
 //go:wasmimport env abort
 func abort(msg, file *string, line, column *int32)
 
+//go:wasmimport env revert
+func revert(msg, symbol *string)
+
+// Aborts the contract execution
 func Abort(msg string) {
 	ln := int32(0)
 	abort(&msg, nil, &ln, &ln)
 	panic(msg)
+}
+
+// Reverts the transaction and abort execution in the same way as Abort().
+func Revert(msg string, symbol string) {
+	revert(&msg, &symbol)
 }
 
 // Set a value by key in the contract state
