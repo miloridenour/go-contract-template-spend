@@ -40,12 +40,10 @@ func hiveTransfer(arg1 *string, arg2 *string, arg3 *string) *string
 //go:wasmimport sdk hive.withdraw
 func hiveWithdraw(arg1 *string, arg2 *string, arg3 *string) *string
 
-// /TODO: this is not implemented yet
-// /go:wasmimport sdk contracts.read
+//go:wasmimport sdk contracts.read
 func contractRead(contractId *string, key *string) *string
 
-// /TODO: this is not implemented yet
-// /go:wasmimport sdk contracts.call
+//go:wasmimport sdk contracts.call
 func contractCall(contractId *string, method *string, payload *string, options *string) *string
 
 // var envMap = []string{
@@ -163,6 +161,11 @@ func GetEnv() Env {
 	return env
 }
 
+// Get current execution environment variables as json string
+func GetEnvStr() string {
+	return *getEnv(nil)
+}
+
 // Get current execution environment variable by a key
 func GetEnvKey(key string) *string {
 	return getEnvKey(&key)
@@ -201,4 +204,22 @@ func HiveWithdraw(to Address, amount int64, asset Asset) {
 	amt := strconv.FormatInt(amount, 10)
 	as := asset.String()
 	hiveWithdraw(&toaddr, &amt, &as)
+}
+
+// Get a value by key from the contract state of another contract
+func ContractStateGet(contractId string, key string) *string {
+	return contractRead(&contractId, &key)
+}
+
+// Call another contract
+func ContractCall(contractId string, method string, payload string, options *ContractCallOptions) *string {
+	optStr := ""
+	if options != nil {
+		optByte, err := json.Marshal(&options)
+		if err != nil {
+			Revert("could not serialize options", "sdk_error")
+		}
+		optStr = string(optByte)
+	}
+	return contractCall(&contractId, &method, &payload, &optStr)
 }
