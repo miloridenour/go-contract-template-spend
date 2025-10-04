@@ -37,6 +37,7 @@ func TestContract(t *testing.T) {
 		RcLimit:    1000,
 		Intents:    []contracts.Intent{},
 	})
+	fmt.Println("error:", *result.Err)
 	assert.True(t, result.Success)                 // assert contract execution success
 	assert.LessOrEqual(t, gasUsed, uint(10000000)) // assert this call uses no more than 10M WASM gas
 	assert.GreaterOrEqual(t, len(logs), 1)         // assert at least 1 log emitted
