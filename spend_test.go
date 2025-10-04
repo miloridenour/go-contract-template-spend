@@ -3,14 +3,13 @@ package spend_test
 import (
 	_ "embed"
 	"encoding/json"
-	"os"
+	"fmt"
 	"testing"
 
 	"vsc-node/lib/test_utils"
 	"vsc-node/modules/db/vsc/contracts"
 	stateEngine "vsc-node/modules/state-processing"
 
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,11 +17,6 @@ import (
 var ContractWasm []byte
 
 func TestContract(t *testing.T) {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-	t.Setenv("BTC_PRIVATE_KEY", os.Getenv("BTC_PRIVATE_KEY"))
 	ct := test_utils.NewContractTest()
 	contractId := "spend_btc"
 	ct.RegisterContract(contractId, ContractWasm)
@@ -46,4 +40,5 @@ func TestContract(t *testing.T) {
 	assert.True(t, result.Success)                 // assert contract execution success
 	assert.LessOrEqual(t, gasUsed, uint(10000000)) // assert this call uses no more than 10M WASM gas
 	assert.GreaterOrEqual(t, len(logs), 1)         // assert at least 1 log emitted
+	fmt.Println("Return value:", result.Ret)
 }

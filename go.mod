@@ -6,12 +6,13 @@ replace vsc-node => github.com/vsc-eco/go-vsc-node v0.0.0-20250913022407-f706583
 
 require (
 	github.com/btcsuite/btcd v0.24.2
-	github.com/btcsuite/btcd/btcec/v2 v2.3.5
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/stretchr/testify v1.10.0
 	vsc-node v0.0.0
 )
+
+require github.com/btcsuite/btcd/btcec/v2 v2.3.5 // indirect
 
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
@@ -95,7 +96,6 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
-	github.com/joho/godotenv v1.5.1
 	github.com/jorrizza/ed2curve25519 v0.1.0 // indirect
 	github.com/kilic/bls12-381 v0.1.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect

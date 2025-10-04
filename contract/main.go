@@ -17,8 +17,8 @@
 package main
 
 import (
+	"bytes"
 	_ "contract-template/sdk" // ensure sdk is imported
-	"os"
 
 	"contract-template/sdk"
 
@@ -26,9 +26,8 @@ import (
 
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -143,76 +142,23 @@ func createSpendTransaction(
 	return tx, witnessHash, nil
 }
 
-type Signer interface {
-	Sign(sigHash []byte) ([]byte, error)
-}
-
-type LocalSigner struct {
-	private *btcec.PrivateKey
-}
-
-func NewLocalSigner(privateKeyHex string) (*LocalSigner, error) {
-	privateKeyBytes, err := hex.DecodeString(privateKeyHex)
-	if err != nil {
-		return nil, err
-	}
-	privateKey, _ := btcec.PrivKeyFromBytes(privateKeyBytes)
-	return &LocalSigner{private: privateKey}, nil
-}
-
-func NewLocalSignerFromEnv() (*LocalSigner, error) {
-	privKeyHex := os.Getenv("BTC_PRIVATE_KEY")
-	if privKeyHex == "" {
-		return nil, fmt.Errorf("BTC_PRIVATE_KEY not set")
-	}
-	return NewLocalSigner(privKeyHex)
-}
-
-func (s *LocalSigner) Sign(sigHash []byte) ([]byte, error) {
-	signature := ecdsa.Sign(s.private, sigHash)
-	return append(signature.Serialize(), byte(txscript.SigHashAll)), nil
-}
-
-func signAndFinalizeTransaction(
-	tx *wire.MsgTx,
-	sigHash []byte,
-	signer Signer,
-	redeemScript []byte,
-) (string, error) {
-
-	sigBytes, err := signer.Sign(sigHash)
-	if err != nil {
+func getRawTxHex(tx *wire.MsgTx) (string, error) {
+	var buf bytes.Buffer
+	if err := tx.Serialize(&buf); err != nil {
 		return "", err
 	}
-
-	tx.TxIn[0].Witness = wire.TxWitness{
-		sigBytes,
-		redeemScript,
-	}
-
-	// Serialize final transaction
-	var serialized []byte
-	err = tx.Serialize(&writeBuf{buf: &serialized})
-	if err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(serialized), nil
+	return hex.EncodeToString(buf.Bytes()), nil
 }
 
-type writeBuf struct {
-	buf *[]byte
-}
-
-func (w *writeBuf) Write(p []byte) (n int, err error) {
-	*w.buf = append(*w.buf, p...)
-	return len(p), nil
+type SigningContainer struct {
+	rawTxHex        string
+	inputIndex      int
+	sigHashHex      string
+	redeemScriptHex string
 }
 
 //go:wasmexport spend_btc
-func SpendBTC(a *string) *string {
-	sdk.Log(*a)
-
+func SpendBtc() *string {
 	network := &chaincfg.TestNet3Params
 
 	// Example: Generate script address
@@ -221,7 +167,7 @@ func SpendBTC(a *string) *string {
 
 	address, redeemScript, err := createScriptP2WSH(pubKey, tag, network)
 	if err != nil {
-		panic(err)
+		sdk.Abort(err.Error())
 	}
 
 	sdk.Log(fmt.Sprintf("Script Address: %s\n", address))
@@ -241,25 +187,28 @@ func SpendBTC(a *string) *string {
 		network,
 	)
 	if err != nil {
-		panic(err)
+		sdk.Abort(err.Error())
 	}
 
-	sdk.Log(fmt.Sprintf("\nSigHash to sign: %x\n", sigHash))
-
-	signer, err := NewLocalSignerFromEnv()
-
-	rawTx, err := signAndFinalizeTransaction(
-		tx,
-		sigHash,
-		signer,
-		redeemScript,
-	)
+	rawTxHex, err := getRawTxHex(tx)
 	if err != nil {
-		panic(err)
+		sdk.Abort(err.Error())
 	}
 
-	sdk.Log(fmt.Sprintf("Raw Transaction: %s\n", rawTx))
-	// braodcast at: https://blockstream.info/testnet/tx/push
+	signingOutput := SigningContainer{
+		rawTxHex:        rawTxHex,
+		inputIndex:      0,
+		sigHashHex:      hex.EncodeToString(sigHash),
+		redeemScriptHex: hex.EncodeToString(redeemScript),
+	}
 
-	return a
+	// raw transactions can be signed and later broadcast at: https://blockstream.info/testnet/tx/push
+
+	jsonData, err := json.Marshal(signingOutput)
+	if err != nil {
+		sdk.Abort(err.Error())
+	}
+
+	jsonString := string(jsonData)
+	return &jsonString
 }
