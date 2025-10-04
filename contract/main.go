@@ -38,6 +38,11 @@ import (
 const SENDADDRESS = "tb1qd4erjn4tvt52c92yv66lwju9pzsd2ltph0xe5s"   // milo bitcoin qt
 const CHANGEADDRESS = "tb1q5dgehs94wf5mgfasnfjsh4dqv6hz8e35w4w7tk" // milo bitcoin qt 2
 
+func main() {
+	jsonOutput := SpendBtc()
+	fmt.Println(*jsonOutput)
+}
+
 func createScriptP2WSH(pubKeyHex string, tagHex string, network *chaincfg.Params) (string, []byte, error) {
 	pubKeyBytes, err := hex.DecodeString(pubKeyHex)
 	if err != nil {
@@ -151,10 +156,10 @@ func getRawTxHex(tx *wire.MsgTx) (string, error) {
 }
 
 type SigningContainer struct {
-	rawTxHex        string
-	inputIndex      int
-	sigHashHex      string
-	redeemScriptHex string
+	RawTxHex        string
+	InputIndex      int
+	SigHashHex      string
+	RedeemScriptHex string
 }
 
 //go:wasmexport spend_btc
@@ -196,10 +201,10 @@ func SpendBtc() *string {
 	}
 
 	signingOutput := SigningContainer{
-		rawTxHex:        rawTxHex,
-		inputIndex:      0,
-		sigHashHex:      hex.EncodeToString(sigHash),
-		redeemScriptHex: hex.EncodeToString(redeemScript),
+		RawTxHex:        rawTxHex,
+		InputIndex:      0,
+		SigHashHex:      hex.EncodeToString(sigHash),
+		RedeemScriptHex: hex.EncodeToString(redeemScript),
 	}
 
 	// raw transactions can be signed and later broadcast at: https://blockstream.info/testnet/tx/push
